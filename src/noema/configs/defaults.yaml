@@ -2,6 +2,8 @@ seed: 7
 workspace_capacity: 7
 working_memory_items: 9
 working_memory_decay: 0.12
+workflow_ticks: 3
+workflow_narrative_window: 5
 episodic_backend: memory
 process_budgets:
   perception: 256

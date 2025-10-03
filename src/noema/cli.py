@@ -61,7 +61,7 @@ def _task_from_name(name: str):
 def run(
     task: str = typer.Option("interruption_count", help="Task to run"),
     model: str = typer.Option("dummy", help="Backend model"),
-    ticks: int = typer.Option(50, help="Number of ticks"),
+    ticks: int = typer.Option(50, help="Number of workflow cycles to execute"),
     report: Optional[Path] = typer.Option(None, help="HTML report path"),
     bundle: Optional[Path] = typer.Option(None, help="Bundle output path"),
     config: Optional[Path] = typer.Option(None, help="Config override"),
@@ -92,8 +92,8 @@ def run(
         percept = env.next_percept()
         if percept is None:
             break
-        loop.ingest(percept)
-        loop.tick()
+        result = loop.run_workflow(percept)
+        env.apply_action(result.action)
     report_data = loop.eval()
     if report is not None:
         save_report(loop.traces, report_data, report)
@@ -115,7 +115,7 @@ def replay(path: Path) -> None:
 @eval_app.command("battery")
 def eval_battery(
     model: str = typer.Option("dummy", help="Backend model to use"),
-    ticks: int = typer.Option(100, help="Number of ticks"),
+    ticks: int = typer.Option(100, help="Number of workflow cycles to execute"),
     config: Optional[Path] = typer.Option(None, help="Config override"),
     openai_api_key: Optional[str] = typer.Option(
         None,
@@ -141,8 +141,8 @@ def eval_battery(
         percept = env.next_percept()
         if percept is None:
             break
-        loop.ingest(percept)
-        loop.tick()
+        result = loop.run_workflow(percept)
+        env.apply_action(result.action)
     report = aggregate_from_traces(loop.traces, backend)
     typer.echo(f"Battery summary: {report.metrics}")
 
@@ -167,8 +167,7 @@ def ui(
     env = InterruptionCountingTask(length=30, interruption_rate=0.2)
     percept = env.next_percept()
     if percept:
-        loop.ingest(percept)
-        loop.tick()
+        loop.run_workflow(percept)
     app_instance = build_app(loop)
     uvicorn.run(app_instance, host=host, port=port)
 
@@ -180,7 +179,7 @@ def ablate(
         "--disable",
         help="Processes to disable (e.g. reflector, planner)",
     ),
-    ticks: int = typer.Option(50, help="Ticks to simulate"),
+    ticks: int = typer.Option(50, help="Workflow cycles to simulate"),
     openai_api_key: Optional[str] = typer.Option(
         None,
         help="OpenAI API key for the openai backend",
@@ -208,8 +207,8 @@ def ablate(
         percept = env.next_percept()
         if percept is None:
             break
-        loop.ingest(percept)
-        loop.tick()
+        result = loop.run_workflow(percept)
+        env.apply_action(result.action)
     report = aggregate_from_traces(loop.traces)
     typer.echo(f"Ablation metrics: {report.metrics}")
 
@@ -249,14 +248,15 @@ def chat(
             break
         if not user_input.strip():
             continue
-        loop.ingest(Percept(content=user_input, salience_hint=0.6))
-        trace = loop.tick()
-        action = loop.act()
+        result = loop.run_workflow(Percept(content=user_input, salience_hint=0.6))
+        action = result.action
         if action.kind == "say" and action.payload:
             typer.secho(f"Noema: {action.payload}", fg=typer.colors.GREEN)
-        elif trace.broadcast:
-            summary = trace.broadcast.coalition.summary
-            typer.secho(f"Noema: {summary}", fg=typer.colors.GREEN)
         else:
-            typer.secho("Noema is processing...", fg=typer.colors.YELLOW)
+            last_broadcast = result.last_broadcast()
+            if last_broadcast:
+                summary = last_broadcast.coalition.summary
+            else:
+                summary = "Processing"
+            typer.secho(f"Noema: {summary}", fg=typer.colors.GREEN)
 

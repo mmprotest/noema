@@ -18,13 +18,11 @@ class LlamaIndexMemory:
         self.loop = loop
 
     def add(self, text: str) -> None:
-        self.loop.ingest(Percept(content=text))
-        self.loop.tick()
+        self.loop.run_workflow(Percept(content=text))
 
     def query(self, text: str) -> Dict[str, Any]:
-        self.loop.ingest(Percept(content=text, salience_hint=0.5))
-        self.loop.tick()
-        return {"action": self.loop.act().model_dump()}
+        result = self.loop.run_workflow(Percept(content=text, salience_hint=0.5))
+        return {"action": result.action.model_dump()}
 
 
 __all__ = ["LlamaIndexMemory"]

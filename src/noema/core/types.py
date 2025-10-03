@@ -79,6 +79,8 @@ class RunConfig(BaseModel):
     workspace_capacity: int = 7
     working_memory_items: int = 9
     working_memory_decay: float = 0.15
+    workflow_ticks: int = 3
+    workflow_narrative_window: int = 5
     episodic_backend: Literal["memory", "sqlite", "duckdb"] = "memory"
     episodic_path: Optional[str] = None
     process_budgets: Dict[ProcessName, int] = Field(default_factory=lambda: {

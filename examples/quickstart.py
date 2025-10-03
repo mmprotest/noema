@@ -30,8 +30,8 @@ def main() -> None:
         percept = env.next_percept()
         if percept is None:
             break
-        loop.ingest(percept)
-        loop.tick()
+        result = loop.run_workflow(percept)
+        env.apply_action(result.action)
 
     loop.save_bundle(bundle_path)
     eval_report = aggregate_from_traces(loop.traces, backend=backend)
