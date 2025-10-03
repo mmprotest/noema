@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="420" viewBox="0 0 800 420">
+  <rect width="800" height="420" fill="#1f2937"/>
+  <text x="50%" y="40%" dominant-baseline="middle" text-anchor="middle" fill="#f9fafb" font-family="sans-serif" font-size="36">Timeline preview placeholder</text>
+  <text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle" fill="#d1d5db" font-family="sans-serif" font-size="18">Replace after capturing the real UI</text>
+</svg>
