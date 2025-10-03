@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+*.noema
+.env
+.venv
+htmlcov/
+.pytest_cache/
+.DS_Store
+.idea/

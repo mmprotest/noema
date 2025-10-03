@@ -1,0 +1,21 @@
+seed: 7
+workspace_capacity: 7
+working_memory_items: 9
+working_memory_decay: 0.12
+episodic_backend: memory
+process_budgets:
+  perception: 256
+  planner: 256
+  reflector: 256
+  self_model: 256
+  critic: 128
+process_temperature:
+  perception: 0.0
+  planner: 0.1
+  reflector: 0.2
+  self_model: 0.05
+  critic: 0.0
+anthropomorphism: false
+redaction_rules:
+  - ssn
+  - password
