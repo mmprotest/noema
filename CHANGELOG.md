@@ -7,3 +7,4 @@
 - Docs stubs for architecture and evaluations plus MkDocs navigation
 - Sample bundle/report artifacts and Makefile helper targets
 - Security, contributing, and code of conduct guides
+- OpenAI backend API/base URL overrides and interactive `noema chat` command

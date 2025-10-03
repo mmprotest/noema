@@ -16,11 +16,21 @@ from .base import LLMBackend
 class OpenAIBackend:
     name = "openai"
 
-    def __init__(self, model: str = "gpt-3.5-turbo", temperature: float = 0.2) -> None:
-        api_key = os.getenv("OPENAI_API_KEY")
+    def __init__(
+        self,
+        model: str = "gpt-3.5-turbo",
+        temperature: float = 0.2,
+        api_key: str | None = None,
+        base_url: str | None = None,
+    ) -> None:
+        api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise RuntimeError("OPENAI_API_KEY not set")
-        self.client = OpenAI(api_key=api_key)
+        base_url = base_url or os.getenv("OPENAI_BASE_URL")
+        client_kwargs = {"api_key": api_key}
+        if base_url:
+            client_kwargs["base_url"] = base_url
+        self.client = OpenAI(**client_kwargs)
         self.model = model
         self.default_temperature = temperature
 
