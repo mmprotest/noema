@@ -10,7 +10,7 @@ import yaml
 
 from .core.backends.dummy import DummyBackend
 from .core.loop import ConsciousLoop
-from .core.types import ProcessName, RunConfig
+from .core.types import Percept, ProcessName, RunConfig
 from .reporting.html_report import save_report
 from .tasks import microworlds
 from .tasks.ablations import apply_ablation
@@ -30,14 +30,19 @@ def _load_config(path: Optional[Path]) -> RunConfig:
     return RunConfig.model_validate(data)
 
 
-def _backend_from_name(name: str, seed: int):
+def _backend_from_name(
+    name: str,
+    seed: int,
+    openai_api_key: Optional[str] = None,
+    openai_base_url: Optional[str] = None,
+):
     name = name.lower()
     if name == "dummy":
         return DummyBackend(seed=seed)
     if name == "openai":
         from .core.backends.openai_backend import OpenAIBackend
 
-        return OpenAIBackend()
+        return OpenAIBackend(api_key=openai_api_key, base_url=openai_base_url)
     raise typer.BadParameter(f"Unknown model {name}")
 
 
@@ -61,9 +66,24 @@ def run(
     bundle: Optional[Path] = typer.Option(None, help="Bundle output path"),
     config: Optional[Path] = typer.Option(None, help="Config override"),
     disable_reflector: bool = typer.Option(False, help="Disable reflector process"),
+    openai_api_key: Optional[str] = typer.Option(
+        None,
+        help="OpenAI API key for the openai backend",
+        envvar="OPENAI_API_KEY",
+    ),
+    openai_base_url: Optional[str] = typer.Option(
+        None,
+        help="Custom base URL for the OpenAI-compatible endpoint",
+        envvar="OPENAI_BASE_URL",
+    ),
 ) -> None:
     run_config = _load_config(config)
-    backend = _backend_from_name(model, run_config.seed)
+    backend = _backend_from_name(
+        model,
+        run_config.seed,
+        openai_api_key=openai_api_key,
+        openai_base_url=openai_base_url,
+    )
     loop = ConsciousLoop(backend, run_config)
     env = _task_from_name(task)
     if disable_reflector:
@@ -97,9 +117,24 @@ def eval_battery(
     model: str = typer.Option("dummy", help="Backend model to use"),
     ticks: int = typer.Option(100, help="Number of ticks"),
     config: Optional[Path] = typer.Option(None, help="Config override"),
+    openai_api_key: Optional[str] = typer.Option(
+        None,
+        help="OpenAI API key for the openai backend",
+        envvar="OPENAI_API_KEY",
+    ),
+    openai_base_url: Optional[str] = typer.Option(
+        None,
+        help="Custom base URL for the OpenAI-compatible endpoint",
+        envvar="OPENAI_BASE_URL",
+    ),
 ) -> None:
     run_config = _load_config(config)
-    backend = _backend_from_name(model, run_config.seed)
+    backend = _backend_from_name(
+        model,
+        run_config.seed,
+        openai_api_key=openai_api_key,
+        openai_base_url=openai_base_url,
+    )
     loop = ConsciousLoop(backend, run_config)
     env = microworlds.InterruptionCountingTask(length=ticks, interruption_rate=0.3)
     for _ in range(ticks):
@@ -146,9 +181,24 @@ def ablate(
         help="Processes to disable (e.g. reflector, planner)",
     ),
     ticks: int = typer.Option(50, help="Ticks to simulate"),
+    openai_api_key: Optional[str] = typer.Option(
+        None,
+        help="OpenAI API key for the openai backend",
+        envvar="OPENAI_API_KEY",
+    ),
+    openai_base_url: Optional[str] = typer.Option(
+        None,
+        help="Custom base URL for the OpenAI-compatible endpoint",
+        envvar="OPENAI_BASE_URL",
+    ),
 ) -> None:
     run_config = _load_config(None)
-    backend = _backend_from_name("dummy", run_config.seed)
+    backend = _backend_from_name(
+        "dummy",
+        run_config.seed,
+        openai_api_key=openai_api_key,
+        openai_base_url=openai_base_url,
+    )
     loop = ConsciousLoop(backend, run_config)
     if disable:
         names = [ProcessName(item) for item in disable]
@@ -162,3 +212,51 @@ def ablate(
         loop.tick()
     report = aggregate_from_traces(loop.traces)
     typer.echo(f"Ablation metrics: {report.metrics}")
+
+
+@app.command()
+def chat(
+    model: str = typer.Option("openai", help="Backend model to use for chat"),
+    config: Optional[Path] = typer.Option(None, help="Config override"),
+    openai_api_key: Optional[str] = typer.Option(
+        None,
+        help="OpenAI API key for the openai backend",
+        envvar="OPENAI_API_KEY",
+    ),
+    openai_base_url: Optional[str] = typer.Option(
+        None,
+        help="Custom base URL for the OpenAI-compatible endpoint",
+        envvar="OPENAI_BASE_URL",
+    ),
+) -> None:
+    run_config = _load_config(config)
+    backend = _backend_from_name(
+        model,
+        run_config.seed,
+        openai_api_key=openai_api_key,
+        openai_base_url=openai_base_url,
+    )
+    loop = ConsciousLoop(backend, run_config)
+    typer.echo("Starting interactive chat with Noema. Type 'exit' or 'quit' to stop.")
+    while True:
+        try:
+            user_input = typer.prompt("You")
+        except typer.Abort:
+            typer.echo("\nSession terminated.")
+            break
+        if user_input.strip().lower() in {"exit", "quit"}:
+            typer.echo("Session ended.")
+            break
+        if not user_input.strip():
+            continue
+        loop.ingest(Percept(content=user_input, salience_hint=0.6))
+        trace = loop.tick()
+        action = loop.act()
+        if action.kind == "say" and action.payload:
+            typer.secho(f"Noema: {action.payload}", fg=typer.colors.GREEN)
+        elif trace.broadcast:
+            summary = trace.broadcast.coalition.summary
+            typer.secho(f"Noema: {summary}", fg=typer.colors.GREEN)
+        else:
+            typer.secho("Noema is processing...", fg=typer.colors.YELLOW)
+

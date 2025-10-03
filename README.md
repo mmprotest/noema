@@ -22,6 +22,22 @@ python examples/quickstart.py
 # And prints a tiny metric summary (Brier/ECE/wrong@high-conf).
 ```
 
+### Chatting with a live OpenAI-compatible model
+
+Bring your own API credentials and talk to the control loop directly:
+
+```bash
+# Either export credentials ...
+export OPENAI_API_KEY="sk-..."
+export OPENAI_BASE_URL="https://api.openai.com/v1"  # Optional override
+noema chat --model openai
+
+# ... or pass them as options when launching the chat session
+noema chat --model openai --openai-api-key sk-... --openai-base-url https://api.openai.com/v1
+```
+
+The `OPENAI_BASE_URL` option is useful when targeting self-hosted or Azure-compatible endpoints.
+
 ## Hello, Noema (10-line example)
 
 ```python
