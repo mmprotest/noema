@@ -16,8 +16,8 @@ def main() -> None:
         percept = env.next_percept()
         if percept is None:
             break
-        loop.ingest(percept)
-        loop.tick()
+        result = loop.run_workflow(percept)
+        env.apply_action(result.action)
     report = loop.eval()
     print("Interruption demo metrics:")
     for key, value in report.metrics.items():

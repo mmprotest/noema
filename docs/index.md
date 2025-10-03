@@ -32,6 +32,21 @@ Noema orchestrates a conscious-like control loop for LLM agents. It is a **funct
 
 All processes emit salience-weighted coalitions competing for broadcast.
 
+### Consciousness Workflow
+
+The public API exposes :class:`~noema.core.loop.ConsciousLoop.run_workflow`, which
+executes a complete perceive → deliberate → act cycle. Each workflow:
+
+- Consumes any pending :class:`~noema.core.types.Percept` objects,
+- Advances the controller for ``RunConfig.workflow_ticks`` ticks (or more if
+  multiple percepts are queued),
+- Aggregates the highest-confidence :class:`~noema.core.types.Action`, and
+- Returns recent narrative events for UI display.
+
+Interactive clients such as the CLI and adapters now call ``run_workflow`` to
+ensure multi-step deliberation before responding, leading to more coherent
+utterances compared to single-tick interactions.
+
 ### Memory
 
 Working memory decays exponentially, while episodic memory persists via in-memory, SQLite, or DuckDB backends.

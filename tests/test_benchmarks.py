@@ -10,8 +10,7 @@ def test_evaluation_metrics_are_bounded() -> None:
     config = RunConfig(seed=5)
     loop = ConsciousLoop(DummyBackend(seed=config.seed), config)
     for tick in range(10):
-        loop.ingest(Percept(content=f"tick {tick}", timestamp=tick, salience_hint=0.4))
-        loop.tick()
+        loop.run_workflow(Percept(content=f"tick {tick}", timestamp=tick, salience_hint=0.4))
     report = aggregate_from_traces(loop.traces)
     assert set(report.metrics.keys()) >= {
         "interruption_recovery",

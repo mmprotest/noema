@@ -20,9 +20,8 @@ class CrewAIAgent:
         self.loop = loop
 
     def handle_task(self, description: str) -> Dict[str, Any]:
-        self.loop.ingest(Percept(content=description, salience_hint=0.4))
-        self.loop.tick()
-        return {"response": self.loop.act().model_dump(), "tick": self.loop.tick_id}
+        result = self.loop.run_workflow(Percept(content=description, salience_hint=0.4))
+        return {"response": result.action.model_dump(), "tick": self.loop.tick_id}
 
 
 __all__ = ["CrewAIAgent"]
