@@ -3,5 +3,7 @@ theme:
   name: material
 nav:
   - Home: index.md
+  - Architecture: architecture.md
+  - Evaluations: evaluations.md
 plugins:
   - search
